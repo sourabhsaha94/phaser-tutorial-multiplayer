@@ -1,7 +1,7 @@
 var config = {
     type: Phaser.AUTO,
-    width: 800,
-    height: 600,
+    width: 1000,
+    height: 700,
     physics: {
         default: 'arcade',
         arcade: {
@@ -17,6 +17,7 @@ var config = {
 };
 
 var game = new Phaser.Game(config);
+var scoreText;
 
 // preloads the assets with key-value pairing
 function preload ()
@@ -66,21 +67,35 @@ function create ()
     });
 
     this.socket.on('playerMoved', function (playerInfo) {
-        self.otherPlayers.getChildren().forEach(function (otherPlayer) {
-          if (playerInfo.playerId === otherPlayer.playerId) {
+        self.otherPlayers.getChildren().forEach(function (otherPlayer) 
+        {
+          if (playerInfo.playerId === otherPlayer.playerId) 
+          {
             otherPlayer.setRotation(playerInfo.rotation);
             otherPlayer.setPosition(playerInfo.x, playerInfo.y);
           }
         });
     });
 
-    this.socket.on('starLocation', function (starLocation) {
+    this.socket.on('starLocation', function (starLocation) 
+    {
         if (self.star) self.star.destroy();
         self.star = self.physics.add.image(starLocation.x, starLocation.y, 'star');
-        self.physics.add.overlap(self.ship, self.star, function () {
+        self.physics.add.overlap(self.ship, self.star, function () 
+        {
           this.socket.emit('starCollected');
         }, null, self);
     });
+
+    scoreText = this.add.text(16, 16, 'Collect the stars!', {fontSize: '18px', fill: '#ffffff'});
+
+    this.socket.on('scoreUpdate', function(scores){
+        let text = "";
+        Object.keys(scores).forEach(function(scoreId){
+            text += "Player" + scores[scoreId]["id"] + ":" + scores[scoreId]["score"] + "\t";
+        });
+        scoreText.setText(text);
+    })
 
     this.cursors = this.input.keyboard.createCursorKeys();
 }
@@ -88,7 +103,8 @@ function create ()
 function addPlayer(self, playerInfo)
 {
     self.ship= self.physics.add.sprite(playerInfo.x, playerInfo.y, 'starship');
-    self.ship.setDisplaySize(53,40);
+    self.ship.setTint(playerInfo.color);
+    self.ship.setDisplaySize(60,40);
     self.ship.setDrag(100);
     self.ship.setAngularDrag(100);
     self.ship.setMaxVelocity(200);
@@ -97,7 +113,8 @@ function addPlayer(self, playerInfo)
 function addOtherPlayers(self, playerInfo)
 {
     const otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'starship');
-    otherPlayer.setDisplaySize(53,40);
+    otherPlayer.setTint(playerInfo.color);
+    otherPlayer.setDisplaySize(60,40);
     otherPlayer.playerId = playerInfo.playerId;
     self.otherPlayers.add(otherPlayer);
 }
@@ -107,21 +124,24 @@ function update ()
 {
     if (this.ship) 
     {
-        if (this.cursors.left.isDown) {
+        if (this.cursors.left.isDown) 
+        {
           this.ship.setAngularVelocity(-150);
-        } else if (this.cursors.right.isDown) {
+        } else if (this.cursors.right.isDown) 
+        {
           this.ship.setAngularVelocity(150);
-        } else {
+        } else 
+        {
           this.ship.setAngularVelocity(0);
         }
       
         if (this.cursors.up.isDown) 
         {
-          this.physics.velocityFromRotation(this.ship.rotation - 1.5, 100, this.ship.body.acceleration);
+          this.physics.velocityFromRotation(this.ship.rotation - 1.5, 200, this.ship.body.acceleration);
         } 
         else if (this.cursors.down.isDown) 
         {
-            this.physics.velocityFromRotation(this.ship.rotation + 1.5, 100, this.ship.body.acceleration);
+            this.physics.velocityFromRotation(this.ship.rotation + 1.5, 200, this.ship.body.acceleration);
         } 
         else 
         {
@@ -140,7 +160,8 @@ function update ()
         }
         
         // save old position data
-        this.ship.oldPosition = {
+        this.ship.oldPosition = 
+        {
             x: this.ship.x,
             y: this.ship.y,
             rotation: this.ship.rotation
